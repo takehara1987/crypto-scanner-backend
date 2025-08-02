@@ -4,4 +4,5 @@ gunicorn
 yfinance
 pandas
 pandas-ta
-setuptools # <--- Ferramenta adicionada para resolver o erro
+setuptools
+numpy==1.26.4 
