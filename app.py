@@ -1,1 +1,70 @@
-{"cells":[{"cell_type":"code","source":"# Salve este ficheiro como \"app.py\"\n\nfrom flask import Flask, jsonify\nfrom flask_cors import CORS\nimport yfinance as yf\nimport pandas as pd\nimport pandas_ta as ta\nimport warnings\n\nwarnings.filterwarnings('ignore')\n\n# --- Configuração da Aplicação Web ---\napp = Flask(__name__)\nCORS(app)\n\n# --- A nossa função de análise (simplificada para um exemplo rápido) ---\ndef analisar_ativo_simplificado(ticker):\n    \"\"\"Analisa um único ativo à procura de um setup de Wyckoff Spring.\"\"\"\n    try:\n        dados_d1 = yf.Ticker(ticker).history(period=\"1y\")\n        if dados_d1.empty or len(dados_d1) < 32: return None\n        \n        dados_d1['range_low_30d'] = dados_d1['Low'].rolling(window=30).min()\n        \n        penultimo_dia = dados_d1.iloc[-2]\n        antepenultimo_dia = dados_d1.iloc[-3]\n        \n        suporte_range = antepenultimo_dia['range_low_30d']\n        \n        # Condição do Spring no Diário\n        if antepenultimo_dia['Low'] < suporte_range and penultimo_dia['Close'] > suporte_range:\n            stop_loss = antepenultimo_dia['Low']\n            return {\n                'ativo': ticker, \n                'estrategia': 'COMPRA_SPRING',\n                'data_setup': penultimo_dia.name.strftime('%Y-%m-%d'),\n                'stop_potencial': stop_loss\n            }\n    except Exception:\n        return None\n    return None\n\n# --- O Ponto de Entrada da API (Endpoint) ---\n@app.route('/scan', methods=['GET'])\ndef scan_market():\n    \"\"\"Executa o scanner para a watchlist e retorna os resultados em formato JSON.\"\"\"\n    watchlist = [\"BTC-USD\", \"ETH-USD\", \"SOL-USD\", \"ADA-USD\", \"LINK-USD\", \"DOT-USD\", \"AVAX-USD\"]\n    \n    setups_em_andamento = []\n    \n    for ativo in watchlist:\n        resultado = analisar_ativo_simplificado(ativo)\n        if resultado:\n            setups_em_andamento.append(resultado)\n            \n    mock_sinais_confirmados = [\n        { 'ativo': 'SOL-USD', 'estrategia': 'COMPRA_SPRING_MTF', 'hora_gatilho': '2025-08-01 14:00', 'entrada': 145.50, 'stop': 138.20, 'alvo': 167.10 }\n    ]\n\n    return jsonify({\n        'sinaisConfirmados': mock_sinais_confirmados,\n        'setupsEmAndamento': setups_em_andamento\n    })\n\n# Rota de \"saúde\" para a Render saber que a aplicação está viva\n@app.route('/')\ndef health_check():\n    return \"Servidor de análise a funcionar!\"\n\n# A Render usa um servidor de produção como o Gunicorn, por isso não precisamos do app.run()","outputs":[],"execution_count":null,"metadata":{}}],"metadata":{"colab":{"from_bard":true},"kernelspec":{"display_name":"Python 3","name":"python3"}},"nbformat":4,"nbformat_minor":0}
+# Salve este ficheiro como "app.py"
+
+from flask import Flask, jsonify
+from flask_cors import CORS
+import yfinance as yf
+import pandas as pd
+import pandas_ta as ta
+import warnings
+
+warnings.filterwarnings('ignore')
+
+# --- Configuração da Aplicação Web ---
+app = Flask(__name__)
+CORS(app)
+
+# --- A nossa função de análise (simplificada para um exemplo rápido) ---
+def analisar_ativo_simplificado(ticker):
+    """Analisa um único ativo à procura de um setup de Wyckoff Spring."""
+    try:
+        dados_d1 = yf.Ticker(ticker).history(period="1y")
+        if dados_d1.empty or len(dados_d1) < 32: return None
+        
+        dados_d1['range_low_30d'] = dados_d1['Low'].rolling(window=30).min()
+        
+        penultimo_dia = dados_d1.iloc[-2]
+        antepenultimo_dia = dados_d1.iloc[-3]
+        
+        suporte_range = antepenultimo_dia['range_low_30d']
+        
+        # Condição do Spring no Diário
+        if antepenultimo_dia['Low'] < suporte_range and penultimo_dia['Close'] > suporte_range:
+            stop_loss = antepenultimo_dia['Low']
+            return {
+                'ativo': ticker, 
+                'estrategia': 'COMPRA_SPRING',
+                'data_setup': penultimo_dia.name.strftime('%Y-%m-%d'),
+                'stop_potencial': stop_loss
+            }
+    except Exception:
+        return None
+    return None
+
+# --- O Ponto de Entrada da API (Endpoint) ---
+@app.route('/scan', methods=['GET'])
+def scan_market():
+    """Executa o scanner para a watchlist e retorna os resultados em formato JSON."""
+    watchlist = ["BTC-USD", "ETH-USD", "SOL-USD", "ADA-USD", "LINK-USD", "DOT-USD", "AVAX-USD"]
+    
+    setups_em_andamento = []
+    
+    for ativo in watchlist:
+        resultado = analisar_ativo_simplificado(ativo)
+        if resultado:
+            setups_em_andamento.append(resultado)
+            
+    mock_sinais_confirmados = [
+        { 'ativo': 'SOL-USD', 'estrategia': 'COMPRA_SPRING_MTF', 'hora_gatilho': '2025-08-01 14:00', 'entrada': 145.50, 'stop': 138.20, 'alvo': 167.10 }
+    ]
+
+    return jsonify({
+        'sinaisConfirmados': mock_sinais_confirmados,
+        'setupsEmAndamento': setups_em_andamento
+    })
+
+# Rota de "saúde" para a Render saber que a aplicação está viva
+@app.route('/')
+def health_check():
+    return "Servidor de análise a funcionar!"
+
+# A Render usa um servidor de produção como o Gunicorn, por isso não precisamos do app.run()
