@@ -154,20 +154,9 @@ def scan_market():
         "BEAM-USD", "DYDX-USD", "AGIX-USD", "NEO-USD", "WLD-USD", "ROSE-USD", "PYTH-USD", "GNO-USD", "CHZ-USD", "MINA-USD",
         "FLOW-USD", "KCS-USD", "FXS-USD", "KLAY-USD", "GMX-USD", "RON-USD", "CFX-USD", "CVX-USD", "ZEC-USD", "AIOZ-USD",
         "WEMIX-USD", "ENA-USD", "TWT-USD", "CAKE-USD", "CRV-USD", "FLOKI-USD", "BTT-USD", "1INCH-USD", "GMT-USD", "ZIL-USD",
-        "ANKR-USD", "JASMY-USD", "KSM-USD", "LUNC-USD", "USTC-USD", "CELO-USD", "IOTA-USD", "HNT-USD", "RPL-USD", "FTT-USD",
-        # Additional Mid/Small Caps (100)
-        "XDC-USD", "PAXG-USD", "DASH-USD", "ENS-USD", "BAT-USD", "ZRX-USD", "YFI-USD", "SUSHI-USD", "UMA-USD", "REN-USD",
-        "KNC-USD", "BAL-USD", "LRC-USD", "OCEAN-USD", "POWR-USD", "RLC-USD", "BAND-USD", "TRB-USD", "API3-USD", "BLZ-USD",
-        "PERP-USD", "COTI-USD", "STORJ-USD", "SKL-USD", "CTSI-USD", "NKN-USD", "OGN-USD", "NMR-USD", "IOTX-USD", "AUDIO-USD",
-        "CVC-USD", "LOOM-USD", "MDT-USD", "REQ-USD", "RLY-USD", "TRU-USD", "ACH-USD", "AGLD-USD", "ALCX-USD", "AMP-USD",
-        "ARPA-USD", "AUCTION-USD", "BADGER-USD", "BICO-USD", "BNT-USD", "BOND-USD", "CLV-USD", "CTX-USD", "DDX-USD", "DIA-USD",
-        "DREP-USD", "ELF-USD", "FARM-USD", "FORTH-USD", "GHST-USD", "GTC-USD", "HIGH-USD", "IDEX-USD", "KEEP-USD", "KP3R-USD",
-        "LCX-USD", "MASK-USD", "MLN-USD", "NEST-USD", "NU-USD", "ORN-USD", "OXT-USD", "PLA-USD", "POLS-USD", "POND-USD",
-        "RAI-USD", "RGT-USD", "SHPING-USD", "SPELL-USD", "SUPER-USD", "WNXM-USD", "YFII-USD", "RAD-USD", "COVAL-USD", "OMG-USD",
-        "ENJ-USD", "WAVES-USD", "ICX-USD", "QTUM-USD", "ONT-USD", "IOST-USD", "DGB-USD", "SC-USD", "LSK-USD", "ARDR-USD",
-        "SYS-USD", "STEEM-USD", "NEXO-USD", "HOT-USD", "BTG-USD", "ZEN-USD", "SRM-USD", "DCR-USD", "RVN-USD", "NANO-USD"
+        "ANKR-USD", "JASMY-USD", "KSM-USD", "LUNC-USD", "USTC-USD", "CELO-USD", "IOTA-USD", "HNT-USD", "RPL-USD", "FTT-USD"
     ]
-    watchlist = list(dict.fromkeys(watchlist))[:200]
+    watchlist = list(dict.fromkeys(watchlist))[:100]
     
     alertas_confirmados = []
     setups_em_andamento = []
