@@ -5,4 +5,5 @@ yfinance
 pandas
 pandas-ta
 setuptools
-numpy==1.26.4 
+numpy==1.26.4
+scipy 
