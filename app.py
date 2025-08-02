@@ -1,4 +1,4 @@
-### CÓDIGO FINAL OTIMIZADO (v44 - PARA RENDER COM 200 ATIVOS) ###
+### CÓDIGO FINAL OTIMIZADO (v43 - PARA RENDER COM 180 ATIVOS) ###
 
 # ==============================================================================
 # ETAPA 0: IMPORTAÇÕES E CONFIGURAÇÃO DA APLICAÇÃO
@@ -85,7 +85,7 @@ def analisar_ativo_mtf(ticker):
 def scan_market():
     """Executa o scanner para a watchlist e retorna os resultados em formato JSON."""
     
-    # WATCHLIST EXPANDIDA PARA 200 ATIVOS
+    # WATCHLIST EXPANDIDA PARA 180 ATIVOS
     watchlist = [
         # Top Tier & Large Caps (50)
         "BTC-USD", "ETH-USD", "BNB-USD", "SOL-USD", "XRP-USD", "DOGE-USD", "ADA-USD", "AVAX-USD", "SHIB-USD", "DOT-USD",
@@ -105,15 +105,12 @@ def scan_market():
         "PERP-USD", "COTI-USD", "STORJ-USD", "SKL-USD", "CTSI-USD", "NKN-USD", "OGN-USD", "NMR-USD", "IOTX-USD", "AUDIO-USD",
         "CVC-USD", "LOOM-USD", "MDT-USD", "REQ-USD", "RLY-USD", "TRU-USD", "ACH-USD", "AGLD-USD", "ALCX-USD", "AMP-USD",
         "ARPA-USD", "AUCTION-USD", "BADGER-USD", "BICO-USD", "BNT-USD", "BOND-USD", "CLV-USD", "CTX-USD", "DDX-USD", "DIA-USD",
-        # Additional Mid/Small Caps (30)
+        # 30 Novos Ativos
         "DREP-USD", "ELF-USD", "FARM-USD", "FORTH-USD", "GHST-USD", "GTC-USD", "HIGH-USD", "IDEX-USD", "KEEP-USD", "KP3R-USD",
         "LCX-USD", "MASK-USD", "MLN-USD", "NEST-USD", "NU-USD", "ORN-USD", "OXT-USD", "PLA-USD", "POLS-USD", "POND-USD",
-        "RAI-USD", "RGT-USD", "SHPING-USD", "SPELL-USD", "SUPER-USD", "WNXM-USD", "YFII-USD", "RAD-USD", "COVAL-USD", "OMG-USD",
-        # 20 Novos Ativos
-        "ENJ-USD", "WAVES-USD", "ICX-USD", "QTUM-USD", "ONT-USD", "IOST-USD", "DGB-USD", "SC-USD", "LSK-USD", "ARDR-USD",
-        "SYS-USD", "STEEM-USD", "NEXO-USD", "HOT-USD", "BTG-USD", "ZEN-USD", "SRM-USD", "DCR-USD", "RVN-USD", "NANO-USD"
+        "RAI-USD", "RGT-USD", "SHPING-USD", "SPELL-USD", "SUPER-USD", "WNXM-USD", "YFII-USD", "RAD-USD", "COVAL-USD", "OMG-USD"
     ]
-    watchlist = list(dict.fromkeys(watchlist))[:200]
+    watchlist = list(dict.fromkeys(watchlist))[:180]
     
     setups_em_andamento = []
     
@@ -136,4 +133,4 @@ def scan_market():
 # Rota de "saúde" para a Render saber que a aplicação está viva
 @app.route('/')
 def health_check():
-    return "Servidor de análise v44 a funcionar!"
+    return "Servidor de análise v43 a funcionar!"
