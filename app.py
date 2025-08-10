@@ -1,4 +1,4 @@
-### CÓDIGO FINAL OTIMIZADO (v46 - PARA RENDER/RAILWAY COM 100 ATIVOS DA MEXC) ###
+### CÓDIGO FINAL E COMPLETO (v57 - PARA RENDER COM SUGESTÃO ELLIOTT) ###
 
 # ==============================================================================
 # ETAPA 0: IMPORTAÇÕES E CONFIGURAÇÃO DA APLICAÇÃO
@@ -34,8 +34,32 @@ def get_btc_data():
             btc_data_cache['MME21'] = ta.ema(btc_data_cache['Close'], length=21)
     return btc_data_cache
 
-def analisar_ativo_mtf(ticker):
-    """Função principal que faz a análise Top-Down para um único ativo."""
+def sugerir_estado_elliott(ticker, interval):
+    """Analisa a estrutura de pivôs para sugerir um estado de onda de Elliott."""
+    try:
+        periodo = "5y" if interval == "1wk" else "2y"
+        dados = yf.Ticker(ticker).history(period=periodo, interval=interval)
+        if dados.empty or len(dados) < 20: return "Dados Insuficientes"
+        
+        indices_topos, _ = find_peaks(dados['High'], distance=5, prominence=dados['High'].std()*0.5)
+        indices_fundos, _ = find_peaks(-dados['Low'], distance=5, prominence=dados['Low'].std()*0.5)
+        
+        if len(indices_topos) < 2 or len(indices_fundos) < 2: return "Indefinido / Lateral"
+
+        ultimo_topo = dados['High'].iloc[indices_topos[-1]]; penultimo_topo = dados['High'].iloc[indices_topos[-2]]
+        ultimo_fundo = dados['Low'].iloc[indices_fundos[-1]]; penultimo_fundo = dados['Low'].iloc[indices_fundos[-2]]
+
+        if ultimo_topo > penultimo_topo and ultimo_fundo > penultimo_fundo:
+            return "Impulso de Alta"
+        elif ultimo_topo < penultimo_topo and ultimo_fundo < penultimo_fundo:
+            return "Impulso de Baixa"
+        else:
+            return "Indefinido / Correção"
+    except Exception:
+        return "Erro na Análise"
+
+def analisar_ativo(ticker):
+    """Função principal que faz a análise completa para um único ativo."""
     try:
         dados_d1 = yf.Ticker(ticker).history(period="1y")
         if dados_d1.empty or len(dados_d1) < 201: return None
@@ -43,24 +67,12 @@ def analisar_ativo_mtf(ticker):
         # --- Cálculo de Indicadores ---
         dados_d1['MME200'] = ta.ema(dados_d1['Close'], length=200)
         dados_d1['Volume_MA20'] = dados_d1['Volume'].rolling(window=20).mean()
-        dados_d1['RSI'] = ta.rsi(dados_d1['Close'], length=14)
-        dados_d1['ATR'] = ta.atr(dados_d1['High'], dados_d1['Low'], dados_d1['Close'], length=14)
-        bbands = ta.bbands(dados_d1['Close'], length=20, std=2)
-        if bbands is not None and not bbands.empty:
-            dados_d1['BB_Width'] = (bbands['BBU_20_2.0'] - bbands['BBL_20_2.0']) / bbands['BBM_20_2.0']
-            dados_d1['BB_Width_MA20'] = dados_d1['BB_Width'].rolling(window=20).mean()
-        else:
-            dados_d1['BB_Width'], dados_d1['BB_Width_MA20'] = 0, 0
-        
         dados_d1['range_low_30d'] = dados_d1['Low'].rolling(window=30).min()
         
         # --- Verificação de Setups no Penúltimo Dia ---
-        penultimo_dia = dados_d1.iloc[-2]; antepenultimo_dia = dados_d1.iloc[-3]; ultimo_dia = dados_d1.iloc[-1]
-        setups_encontrados = []
-        score = 0
+        penultimo_dia = dados_d1.iloc[-2]; antepenultimo_dia = dados_d1.iloc[-3]
         
-        # FILTROS GERAIS
-        regime_nao_explosivo = penultimo_dia['BB_Width'] < penultimo_dia['BB_Width_MA20']
+        # FILTROS
         tendencia_de_alta = penultimo_dia['Close'] > penultimo_dia['MME200']
         btc_em_alta = True
         if ticker != "BTC-USD":
@@ -69,24 +81,27 @@ def analisar_ativo_mtf(ticker):
             btc_no_dia = btc_data.loc[btc_data.index.asof(penultimo_dia.name)]
             btc_em_alta = btc_no_dia['Close'] > btc_no_dia['MME21']
 
-        if tendencia_de_alta and btc_em_alta and regime_nao_explosivo:
-            # Setup 1: Wyckoff Spring com Volume
+        if tendencia_de_alta and btc_em_alta:
+            # Setup: Wyckoff Spring com Volume
             suporte_range = antepenultimo_dia['range_low_30d']
             if antepenultimo_dia['Low'] < suporte_range and penultimo_dia['Close'] > suporte_range and penultimo_dia['Volume'] > penultimo_dia['Volume_MA20']:
-                score += 1
-                setups_encontrados.append({'tipo': 'COMPRA_SPRING', 'stop_base': antepenultimo_dia['Low'], 'atr': penultimo_dia['ATR']})
-        
-        if not setups_encontrados: return None
-
-        # --- Lógica de Classificação ---
-        SCORE_MINIMO_SETUP = 1 # Reduzido para aumentar a chance de encontrar sinais na lista menor
-        
-        setup_principal = setups_encontrados[0]
-        stop_dinamico = setup_principal['stop_base'] - (setup_principal['atr'] * 0.5)
-
-        if score >= SCORE_MINIMO_SETUP:
-            return {'status': 'EM_OBSERVACAO', 'ativo': ticker, 'estrategia': setup_principal['tipo'], 'data_setup': penultimo_dia.name.strftime('%Y-%m-%d'), 'stop_potencial': stop_dinamico, 'score': score}
-            
+                stop_potencial = antepenultimo_dia['Low']
+                
+                # Se um setup for encontrado, fazemos a análise de Elliott
+                print(f"  > Setup encontrado para {ticker}! Realizando análise de contexto Elliott...")
+                contexto_elliott = {
+                    'Semanal': sugerir_estado_elliott(ticker, "1wk"),
+                    'Diário': sugerir_estado_elliott(ticker, "1d"),
+                    '1 Hora': sugerir_estado_elliott(ticker, "1h")
+                }
+                
+                return {
+                    'ativo': ticker, 
+                    'estrategia': 'COMPRA_SPRING',
+                    'data_setup': penultimo_dia.name.strftime('%Y-%m-%d'),
+                    'stop_potencial': stop_potencial,
+                    'contexto_elliott': contexto_elliott
+                }
     except Exception:
         return None
     return None
@@ -98,47 +113,31 @@ def analisar_ativo_mtf(ticker):
 def scan_market():
     """Executa o scanner para a watchlist e retorna os resultados em formato JSON."""
     
-    # WATCHLIST EXPANDIDA PARA 100 ATIVOS DA MEXC
+    # Watchlist otimizada para o plano gratuito
     watchlist = [
-        # Top Tier & Large Caps
-        "BTC-USD", "ETH-USD", "BNB-USD", "SOL-USD", "XRP-USD", "DOGE-USD", "ADA-USD", "AVAX-USD", "SHIB-USD", "DOT-USD",
-        "LINK-USD", "TON-USD", "TRX-USD", "MATIC-USD", "BCH-USD", "LTC-USD", "NEAR-USD", "UNI-USD", "XLM-USD", "ATOM-USD",
-        "ETC-USD", "XMR-USD", "ICP-USD", "HBAR-USD", "VET-USD", "FIL-USD", "APT-USD", "CRO-USD", "LDO-USD", "ARB-USD",
-        "QNT-USD", "AAVE-USD", "ALGO-USD", "STX-USD", "FTM-USD", "EOS-USD", "SAND-USD", "MANA-USD", "THETA-USD", "AXS-USD",
-        "RNDR-USD", "XTZ-USD", "SUI-USD", "PEPE-USD", "INJ-USD", "GALA-USD", "SNX-USD", "OP-USD", "KAS-USD", "TIA-USD",
-        # Mid Caps
-        "MKR-USD", "RUNE-USD", "WIF-USD", "JUP-USD", "SEI-USD", "EGLD-USD", "FET-USD", "FLR-USD", "BONK-USD", "BGB-USD",
-        "BEAM-USD", "DYDX-USD", "AGIX-USD", "NEO-USD", "WLD-USD", "ROSE-USD", "PYTH-USD", "GNO-USD", "CHZ-USD", "MINA-USD",
-        "FLOW-USD", "KCS-USD", "FXS-USD", "KLAY-USD", "GMX-USD", "RON-USD", "CFX-USD", "CVX-USD", "ZEC-USD", "AIOZ-USD",
-        "WEMIX-USD", "ENA-USD", "TWT-USD", "CAKE-USD", "CRV-USD", "FLOKI-USD", "BTT-USD", "1INCH-USD", "GMT-USD", "ZIL-USD",
-        "ANKR-USD", "JASMY-USD", "KSM-USD", "LUNC-USD", "USTC-USD", "CELO-USD", "IOTA-USD", "HNT-USD", "RPL-USD", "FTT-USD"
+        "BTC-USD", "ETH-USD", "SOL-USD", "XRP-USD", "DOGE-USD", "ADA-USD", "AVAX-USD", "LINK-USD", "DOT-USD", "MATIC-USD"
     ]
-    watchlist = list(dict.fromkeys(watchlist))[:100]
     
-    alertas_confirmados = []; setups_aguardando_gatilho = []; ativos_em_observacao = []
+    setups_em_andamento = []
     
-    get_btc_data()
+    get_btc_data() # Carrega os dados do BTC uma vez
     
     for ativo in watchlist:
         print(f"Analisando {ativo}...")
-        resultado = analisar_ativo_mtf(ativo)
+        resultado = analisar_ativo(ativo)
         if resultado:
-            if resultado['status'] == 'CONFIRMADO':
-                alertas_confirmados.append(resultado)
-            elif resultado['status'] == 'AGUARDANDO_GATILHO':
-                setups_aguardando_gatilho.append(resultado)
-            elif resultado['status'] == 'EM_OBSERVACAO':
-                ativos_em_observacao.append(resultado)
-
+            setups_em_andamento.append(resultado)
+            
+    # Para este exemplo, usamos os setups encontrados como "em andamento"
     return jsonify({
-        'sinaisConfirmados': alertas_confirmados,
-        'setupsEmAndamento': setups_aguardando_gatilho,
-        'ativosEmObservacao': ativos_em_observacao
+        'sinaisConfirmados': [],
+        'setupsEmAndamento': setups_em_andamento,
+        'ativosEmObservacao': []
     })
 
 @app.route('/')
 def health_check():
-    return "Servidor de análise v46 a funcionar!"
+    return "Servidor de análise v57 a funcionar!"
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
